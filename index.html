@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Workspace - Full Stack Builder</title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-sql.min.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #09090b;
+            --bg-panel: rgba(24, 24, 27, 0.7);
+            --bg-input: rgba(39, 39, 42, 0.5);
+            --border-color: rgba(255, 255, 255, 0.1);
+            --text-main: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --accent-neon: #00e5ff;
+            --accent-purple: #b300ff;
+            --btn-hover: rgba(0, 229, 255, 0.15);
+            --font-mono: 'Courier New', Courier, monospace;
+            --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(0, 229, 255, 0.05), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(179, 0, 255, 0.05), transparent 25%);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
+        /* Glassmorphism Panels */
+        .glass-panel {
+            background: var(--bg-panel);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+        }
+
+        /* Layout */
+        .sidebar {
+            width: 300px;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+            z-index: 10;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Settings Area */
+        .settings-area {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-area h2 {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .input-group {
+            margin-bottom: 12px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 5px;
+            color: var(--text-muted);
+        }
+
+        .input-group select, .input-group input[type="password"] {
+            width: 100%;
+            padding: 8px 12px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 6px;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group select:focus, .input-group input[type="password"]:focus {
+            border-color: var(--accent-neon);
+            box-shadow: 0 0 8px rgba(0, 229, 255, 0.2);
+        }
+
+        /* File Explorer */
+        .file-explorer {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .file-explorer-title {
+            padding: 10px 20px;
+            font-size: 12px;
+            font-weight: bold;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .file-item {
+            padding: 8px 20px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            color: var(--text-muted);
+        }
+
+        .file-item:hover, .file-item.active {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--accent-neon);
+        }
+
+        /* Main Workspace Header */
+        .workspace-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            border-bottom: 1px solid var(--border-color);
+            height: 50px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 15px;
+        }
+
+        .tab {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 5px 0;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .tab:hover { color: var(--text-main); }
+        .tab.active { color: var(--accent-neon); }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent-neon);
+            box-shadow: 0 0 10px var(--accent-neon);
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn:hover { background: rgba(255, 255, 255, 0.1); }
+        
+        .btn-primary {
+            background: rgba(0, 229, 255, 0.1);
+            border-color: var(--accent-neon);
+            color: var(--accent-neon);
+        }
+        
+        .btn-primary:hover {
+            background: var(--accent-neon);
+            color: var(--bg-dark);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
+        }
+
+        /* Workspace Content */
+        .workspace-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .view-panel {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            display: none;
+            overflow: auto;
+        }
+
+        .view-panel.active { display: block; }
+
+        /* Code Editor View */
+        pre[class*="language-"] {
+            margin: 0 !important;
+            border-radius: 0 !important;
+            height: 100%;
+            background: transparent !important;
+        }
+
+        /* Preview View */
+        #preview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: #fff; /* White background for previewing web apps */
+        }
+
+        /* Chat / Prompt Area */
+        .prompt-container {
+            padding: 20px;
+            border-top: 1px solid var(--border-color);
+            background: rgba(9, 9, 11, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .prompt-box {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .prompt-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 16px 50px 16px 20px;
+            font-size: 15px;
+            resize: none;
+            outline: none;
+            height: 60px;
+            font-family: inherit;
+            transition: all 0.3s;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .prompt-input:focus {
+            border-color: var(--accent-neon);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.2), 0 0 20px rgba(0, 229, 255, 0.1);
+        }
+
+        .generate-btn {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--accent-neon);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: var(--bg-dark);
+        }
+
+        .generate-btn:hover {
+            box-shadow: 0 0 15px var(--accent-neon);
+            transform: translateY(-50%) scale(1.05);
+        }
+
+        .generate-btn:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        /* Loading Indicator */
+        .loader {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(0,0,0,0.2);
+            border-top-color: var(--bg-dark);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        /* Status Bar */
+        .status-bar {
+            font-size: 11px;
+            color: var(--text-muted);
+            padding: 5px 20px;
+            text-align: center;
+            border-top: 1px solid var(--border-color);
+        }
+
+        /* Markdown Raw Output */
+        .raw-output {
+            padding: 20px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            color: #d4d4d8;
+        }
+
+        /* Icons (SVG inline) */
+        .icon { width: 16px; height: 16px; fill: currentColor; }
+    </style>
+</head>
+<body>
+
+    <aside class="sidebar glass-panel">
+        <div class="settings-area">
+            <h2>
+                <svg class="icon" viewBox="0 0 24 24"><path d="M19.14,12.94c0.04-0.3,0.06-0.61,0.06-0.94c0-0.32-0.02-0.64-0.06-0.94l2.03-1.58c0.18-0.14,0.23-0.41,0.12-0.61 l-1.92-3.32c-0.12-0.22-0.37-0.29-0.59-0.22l-2.39,0.96c-0.5-0.38-1.03-0.7-1.62-0.94L14.4,2.81c-0.04-0.24-0.24-0.41-0.48-0.41 h-3.84c-0.24,0-0.43,0.17-0.47,0.41L9.25,5.35C8.66,5.59,8.12,5.92,7.63,6.29L5.24,5.33c-0.22-0.08-0.47,0-0.59,0.22L2.73,8.87 C2.62,9.08,2.66,9.34,2.86,9.48l2.03,1.58C4.84,11.36,4.8,11.69,4.8,12s0.02,0.64,0.06,0.94l-2.03,1.58 c-0.18,0.14-0.23,0.41-0.12,0.61l1.92,3.32c0.12,0.22,0.37,0.29,0.59,0.22l2.39-0.96c0.5,0.38,1.03,0.7,1.62,0.94l0.36,2.54 c0.05,0.24,0.24,0.41,0.48,0.41h3.84c0.24,0,0.43-0.17,0.47-0.41l0.36-2.54c0.59-0.24,1.13-0.56,1.62-0.94l2.39,0.96 c0.22,0.08,0.47,0,0.59-0.22l1.92-3.32c0.12-0.22,0.07-0.49-0.12-0.61L19.14,12.94z M12,15.6c-1.98,0-3.6-1.62-3.6-3.6 s1.62-3.6,3.6-3.6s3.6,1.62,3.6,3.6S13.98,15.6,12,15.6z"/></svg>
+                AI Settings
+            </h2>
+            <div class="input-group">
+                <label>Provider</label>
+                <select id="provider-select" onchange="updateModels()">
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="gemini">Gemini (Google)</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Model</label>
+                <select id="model-select"></select>
+            </div>
+            <div class="input-group">
+                <label>API Key (Local only)</label>
+                <input type="password" id="api-key" placeholder="Paste your API key...">
+            </div>
+        </div>
+        
+        <div class="file-explorer-title">
+            <span>Project Files</span>
+            <svg class="icon" viewBox="0 0 24 24" style="cursor: pointer;" onclick="downloadZip()"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+        </div>
+        <div class="file-explorer" id="file-list">
+            <div style="padding: 20px; color: var(--text-muted); font-size: 12px; text-align: center;">
+                No files generated yet.<br>Write a prompt to begin.
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="workspace-header glass-panel">
+            <div class="tabs">
+                <button class="tab" onclick="switchTab('raw')">AI Stream</button>
+                <button class="tab active" onclick="switchTab('code')">Code Viewer</button>
+                <button class="tab" onclick="switchTab('preview')">Live Preview</button>
+            </div>
+            <div class="actions">
+                <button class="btn" onclick="copyCurrentFile()">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+                    Copy Code
+                </button>
+                <button class="btn btn-primary" onclick="runPreview()">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    Run Preview
+                </button>
+            </div>
+        </header>
+
+        <div class="workspace-content">
+            <div id="panel-raw" class="view-panel">
+                <div class="raw-output" id="raw-output-text">Awaiting prompt...</div>
+            </div>
+
+            <div id="panel-code" class="view-panel active">
+                <pre><code id="code-block" class="language-javascript">// Select a file from the explorer to view its contents</code></pre>
+            </div>
+
+            <div id="panel-preview" class="view-panel">
+                <iframe id="preview-iframe"></iframe>
+            </div>
+        </div>
+
+        <div class="prompt-container">
+            <div class="prompt-box">
+                <textarea id="prompt-input" class="prompt-input" placeholder="E.g., Build a modern Todo App with HTML, CSS, and JS..." onkeydown="handleEnter(event)"></textarea>
+                <button id="generate-btn" class="generate-btn" onclick="generateApp()">
+                    <svg class="icon" id="send-icon" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+                    <div class="loader" id="loader-icon"></div>
+                </button>
+            </div>
+        </div>
+        <div class="status-bar" id="status-bar">Ready</div>
+    </main>
+
+    <script>
+        // --- Models Configuration ---
+        const models = {
+            openrouter: [
+                { value: "openai/gpt-4o", label: "GPT-4o (OpenAI)" },
+                { value: "anthropic/claude-3.5-sonnet", label: "Claude 3.5 Sonnet" },
+                { value: "deepseek/deepseek-coder", label: "DeepSeek Coder" },
+                { value: "mistralai/mixtral-8x7b-instruct", label: "Mixtral 8x7B" },
+                { value: "meta-llama/llama-3-70b-instruct", label: "Llama 3 70B" }
+            ],
+            gemini: [
+                { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
+                { value: "gemini-1.5-flash", label: "Gemini 1.5 Flash" }
+            ]
+        };
+
+        // --- State Management ---
+        let generatedFiles = [];
+        let currentActiveFile = null;
+        let isGenerating = false;
+        let rawAIResponse = "";
+
+        // --- Initialize UI ---
+        function updateModels() {
+            const provider = document.getElementById('provider-select').value;
+            const modelSelect = document.getElementById('model-select');
+            modelSelect.innerHTML = '';
+            models[provider].forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.value;
+                opt.textContent = m.label;
+                modelSelect.appendChild(opt);
+            });
+        }
+        
+        // Initial setup
+        updateModels();
+        
+        // Load saved API keys (Security note: only stored in localStorage, never sent to our servers)
+        const savedKey = localStorage.getItem('ai_builder_api_key');
+        if (savedKey) document.getElementById('api-key').value = savedKey;
+
+        document.getElementById('api-key').addEventListener('change', (e) => {
+            localStorage.setItem('ai_builder_api_key', e.target.value);
+        });
+
+        // --- UI Navigation ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.view-panel').forEach(p => p.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(`panel-${tabId}`).classList.add('active');
+        }
+
+        function setStatus(msg) {
+            document.getElementById('status-bar').textContent = msg;
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                generateApp();
+            }
+        }
+
+        // --- Core Parsing Logic ---
+        function parseStreamingFiles(text) {
+            // Split based on our strict prompt rule
+            const blocks = text.split('### FILE:');
+            const files = [];
+            
+            for (let i = 1; i < blocks.length; i++) {
+                const block = blocks[i];
+                // Extract filename
+                const nameMatch = block.match(/^\s*([^\n]+)\n/);
+                if (!nameMatch) continue;
+                
+                const name = nameMatch[1].trim();
+                let content = "";
+                
+                // Find code block inside
+                const codeStart = block.indexOf('```');
+                if (codeStart !== -1) {
+                    const contentStart = block.indexOf('\n', codeStart) + 1;
+                    const codeEnd = block.indexOf('```', contentStart);
+                    
+                    if (codeEnd !== -1) {
+                        content = block.substring(contentStart, codeEnd);
+                    } else {
+                        // Still streaming this file
+                        content = block.substring(contentStart);
+                    }
+                    files.push({ name, content: content.trim() });
+                }
+            }
+            return files;
+        }
+
+        function updateFileExplorer() {
+            const list = document.getElementById('file-list');
+            if (generatedFiles.length === 0) return;
+            
+            list.innerHTML = '';
+            generatedFiles.forEach(file => {
+                const div = document.createElement('div');
+                div.className = `file-item ${currentActiveFile === file.name ? 'active' : ''}`;
+                div.innerHTML = `
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.89 2 1.99 2H18c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/></svg>
+                    ${file.name}
+                `;
+                div.onclick = () => viewFile(file.name);
+                list.appendChild(div);
+            });
+            
+            // Auto-select first file if none selected
+            if (!currentActiveFile && generatedFiles.length > 0) {
+                viewFile(generatedFiles[0].name);
+            }
+        }
+
+        function viewFile(filename) {
+            currentActiveFile = filename;
+            const file = generatedFiles.find(f => f.name === filename);
+            if (!file) return;
+
+            updateFileExplorer(); // Refresh active state
+            
+            const codeBlock = document.getElementById('code-block');
+            codeBlock.textContent = file.content;
+            
+            // Set syntax highlighting language
+            const ext = filename.split('.').pop().toLowerCase();
+            codeBlock.className = '';
+            if (ext === 'js') codeBlock.classList.add('language-javascript');
+            else if (ext === 'html') codeBlock.classList.add('language-markup');
+            else if (ext === 'css') codeBlock.classList.add('language-css');
+            else if (ext === 'json') codeBlock.classList.add('language-json');
+            else if (ext === 'sql') codeBlock.classList.add('language-sql');
+            else codeBlock.classList.add('language-markup');
+
+            Prism.highlightElement(codeBlock);
+            switchTab('code');
+            document.querySelector('.tabs button:nth-child(2)').classList.add('active'); // ensure tab UI matches
+        }
+
+        async function copyCurrentFile() {
+            if (!currentActiveFile) return;
+            const file = generatedFiles.find(f => f.name === currentActiveFile);
+            if (file) {
+                await navigator.clipboard.writeText(file.content);
+                setStatus(`Copied ${file.name} to clipboard`);
+                setTimeout(() => setStatus('Ready'), 2000);
+            }
+        }
+
+        // --- Live Preview Logic ---
+        function runPreview() {
+            if (generatedFiles.length === 0) {
+                alert("No files to preview.");
+                return;
+            }
+
+            switchTab('preview');
+            // Update Tab UI visually since switchTab uses the event target normally
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.tabs button:nth-child(3)').classList.add('active');
+
+            const iframe = document.getElementById('preview-iframe');
+            
+            let htmlFile = generatedFiles.find(f => f.name.endsWith('.html'))?.content || '<h1>No HTML file found</h1>';
+            
+            // Inject CSS and JS if it's a basic web app setup
+            const cssFiles = generatedFiles.filter(f => f.name.endsWith('.css'));
+            const jsFiles = generatedFiles.filter(f => f.name.endsWith('.js') && !f.name.includes('server') && !f.name.includes('backend'));
+
+            let injectCSS = cssFiles.map(f => `<style>${f.content}</style>`).join('\n');
+            let injectJS = jsFiles.map(f => `<script>${f.content}<\/script>`).join('\n');
+
+            // Simple naive injection
+            if (htmlFile.includes('</head>')) {
+                htmlFile = htmlFile.replace('</head>', `${injectCSS}</head>`);
+            } else {
+                htmlFile = `${injectCSS}${htmlFile}`;
+            }
+
+            if (htmlFile.includes('</body>')) {
+                htmlFile = htmlFile.replace('</body>', `${injectJS}</body>`);
+            } else {
+                htmlFile = `${htmlFile}${injectJS}`;
+            }
+
+            const blob = new Blob([htmlFile], { type: 'text/html' });
+            iframe.src = URL.createObjectURL(blob);
+            setStatus("Live preview updated.");
+        }
+
+        // --- Download ZIP ---
+        async function downloadZip() {
+            if (generatedFiles.length === 0) {
+                alert("No project to download.");
+                return;
+            }
+            
+            setStatus("Packaging ZIP...");
+            const zip = new JSZip();
+            
+            generatedFiles.forEach(file => {
+                // handle simple folder paths if present in filename
+                zip.file(file.name, file.content);
+            });
+
+            const blob = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "ai-generated-project.zip";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            setStatus("Project downloaded successfully.");
+        }
+
+        // --- AI API Interaction ---
+        async function generateApp() {
+            const prompt = document.getElementById('prompt-input').value.trim();
+            const apiKey = document.getElementById('api-key').value.trim();
+            const provider = document.getElementById('provider-select').value;
+            const model = document.getElementById('model-select').value;
+
+            if (!prompt) return alert('Please enter a prompt.');
+            if (!apiKey) return alert('Please enter your API key.');
+
+            isGenerating = true;
+            document.getElementById('prompt-input').value = '';
+            document.getElementById('send-icon').style.display = 'none';
+            document.getElementById('loader-icon').style.display = 'block';
+            document.getElementById('generate-btn').disabled = true;
+            
+            rawAIResponse = "";
+            generatedFiles = [];
+            currentActiveFile = null;
+            document.getElementById('raw-output-text').textContent = "";
+            switchTab('raw');
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelector('.tabs button:nth-child(1)').classList.add('active');
+
+            const systemPrompt = `You are an expert full-stack developer. Generate a complete production-ready project with clean architecture, comments, and scalable structure.
+CRITICAL INSTRUCTION: Output the project files strictly in the following format. 
+For each file, start exactly with "### FILE: path/to/filename.ext", followed immediately by a markdown code block containing the file's content. Do NOT wrap the file path in backticks.
+Example:
+### FILE: index.html
+\`\`\`html
+<!DOCTYPE html>...
+\`\`\`
+Generate a complete working app. No conversational filler.`;
+
+            try {
+                if (provider === 'openrouter') {
+                    await fetchOpenRouterStream(apiKey, model, systemPrompt, prompt);
+                } else if (provider === 'gemini') {
+                    await fetchGeminiStream(apiKey, model, systemPrompt, prompt);
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('raw-output-text').textContent += `\n\nERROR: ${err.message}`;
+            } finally {
+                isGenerating = false;
+                document.getElementById('send-icon').style.display = 'block';
+                document.getElementById('loader-icon').style.display = 'none';
+                document.getElementById('generate-btn').disabled = false;
+                setStatus('Generation complete. You can now preview or download.');
+                
+                // Switch to Code View if files were generated
+                if (generatedFiles.length > 0) {
+                    viewFile(generatedFiles[0].name);
+                }
+            }
+        }
+
+        // Handle stream chunk processing
+        function processChunk(text) {
+            rawAIResponse += text;
+            const rawDisplay = document.getElementById('raw-output-text');
+            rawDisplay.textContent = rawAIResponse;
+            rawDisplay.scrollTop = rawDisplay.scrollHeight;
+
+            // Live parse files
+            generatedFiles = parseStreamingFiles(rawAIResponse);
+            updateFileExplorer();
+            
+            // If viewing a file that is currently being streamed, update its content live
+            if (currentActiveFile) {
+                const activeData = generatedFiles.find(f => f.name === currentActiveFile);
+                if (activeData) {
+                    document.getElementById('code-block').textContent = activeData.content;
+                    Prism.highlightElement(document.getElementById('code-block'));
+                }
+            }
+        }
+
+        async function fetchOpenRouterStream(apiKey, model, system, user) {
+            setStatus('Connecting to OpenRouter...');
+            const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: 'system', content: system },
+                        { role: 'user', content: user }
+                    ],
+                    stream: true
+                })
+            });
+
+            if (!response.ok) throw new Error(`OpenRouter Error: ${response.statusText}`);
+            
+            setStatus('Generating code...');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+                
+                for (const line of lines) {
+                    if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            if (data.choices[0].delta.content) {
+                                processChunk(data.choices[0].delta.content);
+                            }
+                        } catch (e) { /* ignore partial json */ }
+                    }
+                }
+            }
+        }
+
+        async function fetchGeminiStream(apiKey, model, system, user) {
+            setStatus('Connecting to Gemini...');
+            // Gemini supports standard SSE using alt=sse
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`;
+            
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    system_instruction: { parts: [{ text: system }] },
+                    contents: [{ role: "user", parts: [{ text: user }] }]
+                })
+            });
+
+            if (!response.ok) {
+                const errJson = await response.json();
+                throw new Error(errJson.error?.message || response.statusText);
+            }
+
+            setStatus('Generating code...');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+                
+                for (let line of lines) {
+                    line = line.trim();
+                    if (line.startsWith('data: ')) {
+                        try {
+                            const data = JSON.parse(line.slice(6));
+                            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                            if (text) {
+                                processChunk(text);
+                            }
+                        } catch (e) { /* ignore */ }
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
